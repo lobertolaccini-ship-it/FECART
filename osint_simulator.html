@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT Terminal - Cyberpunk</title>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --dark-bg: #050510;
+            --terminal-bg: rgba(0, 20, 40, 0.8);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: var(--dark-bg);
+            color: var(--neon-blue);
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        header {
+            padding: 15px;
+            border-bottom: 1px solid var(--neon-blue);
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            text-shadow: 0 0 5px var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        #desk {
+            position: relative;
+            height: calc(100% - 140px);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .item {
+            position: absolute;
+            background: #111;
+            border: 1px solid var(--neon-blue);
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s, z-index 0s;
+            user-select: none;
+            color: #ccc;
+        }
+
+        .item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+            z-index: 100 !important;
+        }
+
+        .item-title {
+            color: var(--neon-blue);
+            border-bottom: 1px dashed var(--neon-blue);
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        /* Specific Items */
+        #id-card { top: 10%; left: 10%; width: 200px; transform: rotate(-5deg); }
+        #sticky-note { top: 50%; left: 20%; width: 150px; background: #222; transform: rotate(10deg); border-color: #ff00ff; color: #ff00ff;}
+        #sticky-note .item-title { border-color: #ff00ff; color: #ff00ff; }
+        #email-print { top: 20%; left: 50%; width: 300px; transform: rotate(2deg); }
+        #photo-back { top: 60%; left: 60%; width: 180px; transform: rotate(-15deg); text-align: center; font-style: italic; }
+
+        .glitch-text {
+            color: #555;
+            background: #222;
+        }
+
+        #terminal {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: var(--terminal-bg);
+            border-top: 1px solid var(--neon-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"] {
+            background: #000;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px;
+            font-family: inherit;
+            width: 300px;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            box-shadow: 0 0 10px var(--neon-blue) inset;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        #result-msg {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 15px;
+            border-radius: 3px;
+            display: none;
+        }
+        
+        .success { color: #0f0; background: rgba(0,255,0,0.1); border: 1px solid #0f0; }
+        .error { color: #f00; background: rgba(255,0,0,0.1); border: 1px solid #f00; }
+
+        /* Draggable logic classes */
+        .dragging {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SYS.OP: INVESTIGAÇÃO - DESKTOP_DUMP_v1.0</h1>
+        <p>MISSÃO: Descubra o <strong>Nome Completo</strong> do alvo reunindo as pistas abaixo.</p>
+    </header>
+
+    <div id="desk">
+        
+        <div class="item" id="id-card" style="z-index: 1;">
+            <div class="item-title">Crachá Danificado</div>
+            <p>NOME: <span style="color:white;">Alex M.</span></p>
+            <p>ID: 8849-B</p>
+            <p>SETOR: <span class="glitch-text">[CORROMPIDO]</span></p>
+        </div>
+
+        <div class="item" id="sticky-note" style="z-index: 2;">
+            <div class="item-title">Post-it</div>
+            <p>Lembrar: A senha do cofre é o nome da família da minha mãe + 2077.</p>
+        </div>
+
+        <div class="item" id="email-print" style="z-index: 3;">
+            <div class="item-title">Impressão Pessoal</div>
+            <p><strong>De:</strong> J.D. &lt;jd.shadow@net.local&gt;</p>
+            <p><strong>Para:</strong> Alvo</p>
+            <p>E aí Alex, tudo certo para amanhã? Não esquece de pegar a encomenda. Aliás, encontrei com o velho <strong>Mercer</strong> ontem, ele disse que a família mandou lembranças.</p>
+            <p>- J</p>
+        </div>
+
+        <div class="item" id="photo-back" style="z-index: 4;">
+            <div class="item-title">Verso de Foto Oculta</div>
+            <p>"Eu e os primos na virada do ano."</p>
+            <p style="font-size: 0.8em; color: #777;">*Anotação a lápis quase apagada:* M. Mercer</p>
+        </div>
+
+    </div>
+
+    <div id="terminal">
+        <div id="result-msg"></div>
+        <label for="answer">ALVO:</label>
+        <input type="text" id="answer" placeholder="Insira o nome completo aqui..." autocomplete="off">
+        <button onclick="checkAnswer()">VERIFICAR</button>
+    </div>
+
+    <script>
+        // Make items draggable
+        const items = document.querySelectorAll('.item');
+        let highestZ = 10;
+
+        items.forEach(item => {
+            let isDragging = false;
+            let startX, startY, initialX, initialY;
+
+            item.addEventListener('mousedown', dragStart);
+            
+            function dragStart(e) {
+                isDragging = true;
+                item.style.zIndex = ++highestZ;
+                item.classList.add('dragging');
+                
+                startX = e.clientX;
+                startY = e.clientY;
+                
+                const style = window.getComputedStyle(item);
+                initialX = parseInt(style.left, 10);
+                initialY = parseInt(style.top, 10);
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('mouseup', dragEnd);
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                item.style.left = initialX + dx + 'px';
+                item.style.top = initialY + dy + 'px';
+            }
+
+            function dragEnd() {
+                isDragging = false;
+                item.classList.remove('dragging');
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('mouseup', dragEnd);
+            }
+        });
+
+        // Verification logic
+        function checkAnswer() {
+            const input = document.getElementById('answer').value.trim().toLowerCase();
+            const msg = document.getElementById('result-msg');
+            
+            // Expected answer: Alex Mercer
+            if (input === 'alex mercer') {
+                msg.textContent = "ACESSO CONCEDIDO: Identidade confirmada.";
+                msg.className = "success";
+                msg.style.display = "block";
+                setTimeout(() => msg.style.display = 'none', 4000);
+            } else {
+                msg.textContent = "ACESSO NEGADO: Dados incorretos.";
+                msg.className = "error";
+                msg.style.display = "block";
+                setTimeout(() => msg.style.display = 'none', 3000);
+            }
+        }
+        
+        // Enter key support
+        document.getElementById('answer').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+    </script>
+</body>
+</html>
