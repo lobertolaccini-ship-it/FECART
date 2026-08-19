@@ -51,35 +51,118 @@
             overflow: hidden;
         }
 
-        .item {
+        /* Ícones de Documentos na Mesa */
+        .icon-item {
             position: absolute;
-            background: #111;
-            border: 1px solid var(--neon-blue);
-            padding: 10px;
-            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
-            cursor: move;
-            transition: transform 0.1s;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            transition: transform 0.2s, filter 0.2s;
             user-select: none;
-            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
-        .item:hover {
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
+        .icon-item svg {
+            width: 50px;
+            height: 50px;
+            stroke: var(--neon-blue);
+            filter: drop-shadow(0 0 5px var(--neon-blue));
+            transition: all 0.2s;
         }
 
-        .item-title {
-            color: var(--neon-blue);
-            border-bottom: 1px dashed var(--neon-blue);
-            margin-bottom: 8px;
-            font-size: 0.9em;
-            text-transform: uppercase;
+        .icon-item.pink-icon svg {
+            stroke: var(--neon-pink);
+            filter: drop-shadow(0 0 5px var(--neon-pink));
+        }
+
+        .icon-item:hover svg {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+        }
+
+        .icon-item.pink-icon:hover svg {
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+        }
+
+        .icon-label {
+            font-size: 0.7em;
+            margin-top: 5px;
+            text-align: center;
+            background: rgba(0,0,0,0.8);
+            padding: 2px 5px;
+            border: 1px solid var(--neon-blue);
+            border-radius: 3px;
             pointer-events: none;
         }
         
-        .item p {
-            pointer-events: none;
+        .icon-item.pink-icon .icon-label {
+            color: var(--neon-pink);
+            border-color: var(--neon-pink);
         }
 
+        /* Modal de Leitura de Documentos */
+        #modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #document-modal {
+            background: #111;
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            color: #ddd;
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+
+        #document-modal.pink-style {
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+        }
+
+        #document-title {
+            color: var(--neon-blue);
+            border-bottom: 1px dashed var(--neon-blue);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            font-size: 1.2em;
+            text-transform: uppercase;
+        }
+        
+        #document-modal.pink-style #document-title {
+            color: var(--neon-pink);
+            border-bottom-color: var(--neon-pink);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .close-btn:hover {
+            color: #f00;
+            text-shadow: 0 0 5px #f00;
+        }
+
+        /* Terminal Rodapé */
         #terminal {
             position: absolute;
             bottom: 0;
@@ -145,14 +228,11 @@
 
         /* Draggable logic */
         .dragging {
-            opacity: 0.9;
+            opacity: 0.5;
         }
         
-        /* Utils for phases */
-        .pink-item { border-color: var(--neon-pink) !important; }
-        .pink-item .item-title { color: var(--neon-pink); border-color: var(--neon-pink); }
         .hidden-text { color: #111; text-shadow: none; transition: 0.3s; }
-        .hidden-text:hover { color: #444; }
+        .hidden-text:hover { color: #888; }
     </style>
 </head>
 <body>
@@ -163,7 +243,16 @@
     </header>
 
     <div id="desk">
-        <!-- Itens são gerados por JS -->
+        <!-- Ícones são gerados por JS -->
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" onclick="closeModal(event)">
+        <div id="document-modal" onclick="event.stopPropagation()">
+            <span class="close-btn" onclick="closeModal(null, true)">[X]</span>
+            <div id="document-title">Título</div>
+            <div id="document-content">Conteúdo aqui...</div>
+        </div>
     </div>
 
     <div id="terminal">
@@ -174,94 +263,65 @@
     </div>
 
     <script>
+        // SVGs para os ícones
+        const svgs = {
+            idCard: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="3"></circle><line x1="15" y1="10" x2="19" y2="10"></line><line x1="15" y1="14" x2="19" y2="14"></line><line x1="9" y1="16" x2="19" y2="16"></line></svg>',
+            stickyNote: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 4h16v12l-6 6H4V4z"></path></svg>',
+            paper: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+            envelope: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>',
+            screen: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>',
+            book: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+            tag: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>',
+            receipt: '<svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 2v20l2-2 2 2 2-2 2 2 2-2 2 2 2-2 2 2V2z"></path><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="12" y2="14"></line></svg>'
+        };
+
         const phases = [
             {
                 level: 1,
                 title: "FASE 1: INICIANTE - RECONHECIMENTO",
                 mission: "MISSÃO: Descubra o <strong>Nome Completo</strong> do alvo.",
                 answer: "alex mercer",
-                items: `
-                    <div class="item" style="top: 10%; left: 10%; width: 200px; transform: rotate(-5deg);">
-                        <div class="item-title">Crachá Danificado</div>
-                        <p>NOME: <span style="color:white;">Alex M.</span></p>
-                        <p>ID: 8849-B</p>
-                    </div>
-                    <div class="item pink-item" style="top: 50%; left: 20%; width: 150px; background: #222; transform: rotate(10deg);">
-                        <div class="item-title">Post-it</div>
-                        <p>Lembrar: A senha do cofre é o nome da família da minha mãe + 2077.</p>
-                    </div>
-                    <div class="item" style="top: 20%; left: 50%; width: 300px; transform: rotate(2deg);">
-                        <div class="item-title">Impressão Pessoal</div>
-                        <p><strong>De:</strong> J.D.</p>
-                        <p>E aí Alex, tudo certo para amanhã? Encontrei com o velho <strong>Mercer</strong> ontem, ele mandou lembranças.</p>
-                    </div>
-                `
+                items: [
+                    { id: 'i1', icon: 'idCard', style: 'top: 15%; left: 20%; transform: rotate(-5deg);', class: '', label: 'Crachá', title: 'Crachá Danificado', content: '<p>NOME: <span style="color:white;">Alex M.</span></p><p>ID: 8849-B</p>' },
+                    { id: 'i2', icon: 'stickyNote', style: 'top: 50%; left: 30%; transform: rotate(10deg);', class: 'pink-icon', label: 'Post-it', title: 'Anotação', content: '<p>Lembrar: A senha do cofre é o nome da família da minha mãe + 2077.</p>' },
+                    { id: 'i3', icon: 'paper', style: 'top: 30%; left: 60%; transform: rotate(2deg);', class: '', label: 'Impressão', title: 'E-mail Impresso', content: '<p><strong>De:</strong> J.D.</p><p>E aí Alex, tudo certo para amanhã? Encontrei com o velho <strong>Mercer</strong> ontem, ele mandou lembranças.</p>' }
+                ]
             },
             {
                 level: 2,
                 title: "FASE 2: INTERMEDIÁRIO - O COFRE",
                 mission: "MISSÃO: Descubra a <strong>Chave de Acesso</strong> do servidor (Formato: 5 caracteres contínuos).",
                 answer: "o42nx",
-                items: `
-                    <div class="item pink-item" style="top: 15%; left: 30%; width: 220px; transform: rotate(-3deg);">
-                        <div class="item-title">Anotação Rápida</div>
-                        <p>Regra da Chave:<br>
-                        1. Primeira letra do nosso setor.<br>
-                        2. Número do nosso prédio.<br>
-                        3. Sigla de 2 letras do projeto.
-                        </p>
-                    </div>
-                    <div class="item" style="top: 55%; left: 15%; width: 250px; transform: rotate(8deg);">
-                        <div class="item-title">Carta de Boas-Vindas</div>
-                        <p>Bem-vindo ao Setor <strong>Operacional</strong>.<br>Você foi alocado no Prédio <strong>42</strong>. Não se atrase.</p>
-                    </div>
-                    <div class="item" style="top: 30%; left: 60%; width: 200px; transform: rotate(-10deg);">
-                        <div class="item-title">Log do Sistema</div>
-                        <p>13:00 - Inicializando subsistemas.<br>13:05 - Projeto <strong>Nexus (NX)</strong> ativado com sucesso.</p>
-                    </div>
-                `
+                items: [
+                    { id: 'i4', icon: 'stickyNote', style: 'top: 20%; left: 25%; transform: rotate(-3deg);', class: 'pink-icon', label: 'Nota Rápida', title: 'Anotação Rápida', content: '<p>Regra da Chave:<br>1. Primeira letra do nosso setor.<br>2. Número do nosso prédio.<br>3. Sigla de 2 letras do projeto.</p>' },
+                    { id: 'i5', icon: 'envelope', style: 'top: 60%; left: 35%; transform: rotate(8deg);', class: '', label: 'Envelope', title: 'Carta de Boas-Vindas', content: '<p>Bem-vindo ao Setor <strong>Operacional</strong>.<br>Você foi alocado no Prédio <strong>42</strong>. Não se atrase.</p>' },
+                    { id: 'i6', icon: 'screen', style: 'top: 35%; left: 65%; transform: rotate(-5deg);', class: '', label: 'Log', title: 'Log do Sistema', content: '<p>13:00 - Inicializando subsistemas.<br>13:05 - Projeto <strong>Nexus (NX)</strong> ativado com sucesso.</p>' }
+                ]
             },
             {
                 level: 3,
                 title: "FASE 3: DIFÍCIL - DESCRIPTOGRAFIA",
                 mission: "MISSÃO: Encontre o <strong>Código de Desativação</strong> da bomba lógica.",
                 answer: "omega",
-                items: `
-                    <div class="item" style="top: 20%; left: 20%; width: 300px; transform: rotate(0deg);">
-                        <div class="item-title">Manual de Segurança</div>
-                        <p>Em caso de contenção de falhas, procure pela palavra-passe codificada em <strong>Base64</strong> na etiqueta de manutenção do núcleo.</p>
-                    </div>
-                    <div class="item pink-item" style="top: 60%; left: 50%; width: 200px; transform: rotate(15deg);">
-                        <div class="item-title">Etiqueta de Manutenção</div>
-                        <p>CORE_STATUS: ONLINE</p>
-                        <p>TAG_AUTH: <span style="font-family: monospace; color: white;">VDBMRVJFRT0=</span> ... espera, essa tá corrompida.</p>
-                        <p>TAG_BACKUP: <span style="font-family: monospace; color: white;">T01FR0E=</span></p>
-                    </div>
-                    <div class="item" style="top: 15%; left: 65%; width: 150px; transform: rotate(-5deg); background:#000;">
-                        <div class="item-title" style="border-color:#333; color:#555;">Recibo Rasgado</div>
-                        <p class="hidden-text">Dica offline: T01FR0E decodificado revela a última letra grega.</p>
-                    </div>
-                `
+                items: [
+                    { id: 'i7', icon: 'book', style: 'top: 25%; left: 20%; transform: rotate(0deg);', class: '', label: 'Manual', title: 'Manual de Segurança', content: '<p>Em caso de contenção de falhas, procure pela palavra-passe codificada em <strong>Base64</strong> na etiqueta de manutenção do núcleo.</p>' },
+                    { id: 'i8', icon: 'tag', style: 'top: 55%; left: 45%; transform: rotate(15deg);', class: 'pink-icon', label: 'Etiqueta', title: 'Etiqueta de Manutenção', content: '<p>CORE_STATUS: ONLINE</p><p>TAG_AUTH: <span style="font-family: monospace; color: white;">VDBMRVJFRT0=</span> [CORROMPIDA]</p><p>TAG_BACKUP: <span style="font-family: monospace; color: white;">T01FR0E=</span></p>' },
+                    { id: 'i9', icon: 'receipt', style: 'top: 20%; left: 70%; transform: rotate(-5deg);', class: '', label: 'Recibo', title: 'Recibo Rasgado', content: '<p class="hidden-text">Dica offline: T01FR0E decodificado revela a última letra grega.</p>' }
+                ]
             },
             {
                 level: 4,
                 title: "SISTEMA COMPROMETIDO",
                 mission: "VOCÊ VENCEU. Todas as travas de segurança foram removidas.",
                 answer: "",
-                items: `
-                    <div class="item" style="top: 30%; left: 35%; width: 300px; transform: rotate(0deg); text-align: center; border-color: #0f0; box-shadow: 0 0 30px #0f0;">
-                        <div class="item-title" style="color: #0f0; border-color: #0f0;">Acesso Root Garantido</div>
-                        <p style="color: #0f0;">Parabéns, agente.</p>
-                        <p style="color: #0f0;">O sistema agora é seu.</p>
-                    </div>
-                `
+                items: []
             }
         ];
 
         let currentPhaseIndex = 0;
         let highestZ = 10;
 
-        function loadPhase(index) {
+        function renderPhase(index) {
             const desk = document.getElementById('desk');
             const phaseTitle = document.getElementById('phase-title');
             const missionText = document.getElementById('mission-text');
@@ -273,64 +333,114 @@
 
             phaseTitle.textContent = phase.title;
             missionText.innerHTML = phase.mission;
-            desk.innerHTML = phase.items;
-            input.value = '';
-
+            
+            desk.innerHTML = ''; // Clear desk
+            
             if (index === phases.length - 1) {
                 // Fim de jogo
+                desk.innerHTML = '<div style="position: absolute; top: 30%; left: 50%; transform: translateX(-50%); text-align: center; border: 2px solid #0f0; padding: 30px; box-shadow: 0 0 30px #0f0; background: #000;"><h2 style="color: #0f0; margin:0;">ACESSO ROOT GARANTIDO</h2><p style="color: #0f0;">O sistema agora é seu.</p></div>';
                 input.disabled = true;
                 btn.disabled = true;
                 document.getElementById('terminal').style.opacity = '0.5';
+                return;
             }
 
-            makeItemsDraggable();
-        }
+            // Gerar ícones
+            phase.items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'icon-item ' + item.class;
+                el.style.cssText = item.style;
+                el.innerHTML = svgs[item.icon] + '<div class="icon-label">' + item.label + '</div>';
+                
+                // Add click listener for modal
+                el.addEventListener('mousedown', function(e) {
+                    if (e.button === 0 && !this.classList.contains('dragging')) {
+                        // We differentiate click from drag inside the mouseup logic, 
+                        // but to make it simple, let's use onclick and prevent trigger if dragged
+                    }
+                });
 
-        function makeItemsDraggable() {
-            const items = document.querySelectorAll('.item');
-            
-            items.forEach(item => {
+                desk.appendChild(el);
+
+                // Setup Drag
                 let isDragging = false;
+                let isMoving = false;
                 let startX, startY, initialX, initialY;
 
-                // Ensure random Z-index so they overlay nicely initially
                 highestZ++;
-                item.style.zIndex = highestZ;
+                el.style.zIndex = highestZ;
 
-                item.addEventListener('mousedown', dragStart);
-                
-                function dragStart(e) {
+                el.addEventListener('mousedown', (e) => {
                     isDragging = true;
+                    isMoving = false;
                     highestZ++;
-                    item.style.zIndex = highestZ;
-                    item.classList.add('dragging');
+                    el.style.zIndex = highestZ;
                     
                     startX = e.clientX;
                     startY = e.clientY;
                     
-                    const style = window.getComputedStyle(item);
+                    const style = window.getComputedStyle(el);
                     initialX = parseInt(style.left, 10) || 0;
                     initialY = parseInt(style.top, 10) || 0;
 
                     document.addEventListener('mousemove', drag);
                     document.addEventListener('mouseup', dragEnd);
-                }
+                });
 
                 function drag(e) {
                     if (!isDragging) return;
+                    
                     const dx = e.clientX - startX;
                     const dy = e.clientY - startY;
-                    item.style.left = initialX + dx + 'px';
-                    item.style.top = initialY + dy + 'px';
+                    
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                        isMoving = true;
+                        el.classList.add('dragging');
+                    }
+
+                    if (isMoving) {
+                        el.style.left = initialX + dx + 'px';
+                        el.style.top = initialY + dy + 'px';
+                    }
                 }
 
-                function dragEnd() {
+                function dragEnd(e) {
                     isDragging = false;
-                    item.classList.remove('dragging');
+                    el.classList.remove('dragging');
                     document.removeEventListener('mousemove', drag);
                     document.removeEventListener('mouseup', dragEnd);
+
+                    if (!isMoving) {
+                        // Click event triggered
+                        openModal(item.title, item.content, item.class.includes('pink-icon'));
+                    }
                 }
             });
+
+            input.value = '';
+        }
+
+        // Modal Logic
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalBox = document.getElementById('document-modal');
+        const modalTitle = document.getElementById('document-title');
+        const modalContent = document.getElementById('document-content');
+
+        function openModal(title, content, isPink) {
+            modalTitle.textContent = title;
+            modalContent.innerHTML = content;
+            if (isPink) {
+                modalBox.classList.add('pink-style');
+            } else {
+                modalBox.classList.remove('pink-style');
+            }
+            modalOverlay.style.display = 'flex';
+        }
+
+        function closeModal(e, force = false) {
+            if (force || e.target === modalOverlay) {
+                modalOverlay.style.display = 'none';
+            }
         }
 
         function checkAnswer() {
@@ -346,7 +456,7 @@
                 setTimeout(() => {
                     msg.style.display = 'none';
                     currentPhaseIndex++;
-                    loadPhase(currentPhaseIndex);
+                    renderPhase(currentPhaseIndex);
                 }, 2500);
 
             } else {
@@ -362,7 +472,7 @@
         });
 
         // Init
-        loadPhase(currentPhaseIndex);
+        renderPhase(currentPhaseIndex);
     </script>
 </body>
 </html>
