@@ -7,8 +7,9 @@
     <style>
         :root {
             --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
             --dark-bg: #050510;
-            --terminal-bg: rgba(0, 20, 40, 0.8);
+            --terminal-bg: rgba(0, 20, 40, 0.9);
         }
 
         body, html {
@@ -32,6 +33,15 @@
             background: rgba(0, 0, 0, 0.7);
             text-shadow: 0 0 5px var(--neon-blue);
             box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            position: relative;
+            z-index: 1000;
+        }
+
+        #phase-title {
+            color: var(--neon-pink);
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            text-shadow: 0 0 5px var(--neon-pink);
         }
 
         #desk {
@@ -47,16 +57,14 @@
             border: 1px solid var(--neon-blue);
             padding: 10px;
             box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
-            cursor: pointer;
-            transition: transform 0.2s, z-index 0s;
+            cursor: move;
+            transition: transform 0.1s;
             user-select: none;
             color: #ccc;
         }
 
         .item:hover {
-            transform: scale(1.05);
             box-shadow: 0 0 20px rgba(0, 243, 255, 0.6);
-            z-index: 100 !important;
         }
 
         .item-title {
@@ -65,18 +73,11 @@
             margin-bottom: 8px;
             font-size: 0.9em;
             text-transform: uppercase;
+            pointer-events: none;
         }
-
-        /* Specific Items */
-        #id-card { top: 10%; left: 10%; width: 200px; transform: rotate(-5deg); }
-        #sticky-note { top: 50%; left: 20%; width: 150px; background: #222; transform: rotate(10deg); border-color: #ff00ff; color: #ff00ff;}
-        #sticky-note .item-title { border-color: #ff00ff; color: #ff00ff; }
-        #email-print { top: 20%; left: 50%; width: 300px; transform: rotate(2deg); }
-        #photo-back { top: 60%; left: 60%; width: 180px; transform: rotate(-15deg); text-align: center; font-style: italic; }
-
-        .glitch-text {
-            color: #555;
-            background: #222;
+        
+        .item p {
+            pointer-events: none;
         }
 
         #terminal {
@@ -92,6 +93,7 @@
             gap: 15px;
             padding: 0 20px;
             box-sizing: border-box;
+            z-index: 1000;
         }
 
         input[type="text"] {
@@ -102,6 +104,7 @@
             font-family: inherit;
             width: 300px;
             outline: none;
+            text-align: center;
         }
 
         input[type="text"]:focus {
@@ -127,137 +130,239 @@
 
         #result-msg {
             position: absolute;
-            top: -40px;
+            top: -50px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 5px 15px;
+            padding: 8px 20px;
             border-radius: 3px;
             display: none;
+            font-weight: bold;
+            text-transform: uppercase;
         }
         
-        .success { color: #0f0; background: rgba(0,255,0,0.1); border: 1px solid #0f0; }
-        .error { color: #f00; background: rgba(255,0,0,0.1); border: 1px solid #f00; }
+        .success { color: #0f0; background: rgba(0,255,0,0.1); border: 1px solid #0f0; box-shadow: 0 0 10px #0f0;}
+        .error { color: #f00; background: rgba(255,0,0,0.1); border: 1px solid #f00; box-shadow: 0 0 10px #f00;}
 
-        /* Draggable logic classes */
+        /* Draggable logic */
         .dragging {
-            opacity: 0.8;
+            opacity: 0.9;
         }
+        
+        /* Utils for phases */
+        .pink-item { border-color: var(--neon-pink) !important; }
+        .pink-item .item-title { color: var(--neon-pink); border-color: var(--neon-pink); }
+        .hidden-text { color: #111; text-shadow: none; transition: 0.3s; }
+        .hidden-text:hover { color: #444; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>SYS.OP: INVESTIGAÇÃO - DESKTOP_DUMP_v1.0</h1>
-        <p>MISSÃO: Descubra o <strong>Nome Completo</strong> do alvo reunindo as pistas abaixo.</p>
+        <div id="phase-title">SYS.OP: INICIANDO...</div>
+        <p id="mission-text">Carregando missão...</p>
     </header>
 
     <div id="desk">
-        
-        <div class="item" id="id-card" style="z-index: 1;">
-            <div class="item-title">Crachá Danificado</div>
-            <p>NOME: <span style="color:white;">Alex M.</span></p>
-            <p>ID: 8849-B</p>
-            <p>SETOR: <span class="glitch-text">[CORROMPIDO]</span></p>
-        </div>
-
-        <div class="item" id="sticky-note" style="z-index: 2;">
-            <div class="item-title">Post-it</div>
-            <p>Lembrar: A senha do cofre é o nome da família da minha mãe + 2077.</p>
-        </div>
-
-        <div class="item" id="email-print" style="z-index: 3;">
-            <div class="item-title">Impressão Pessoal</div>
-            <p><strong>De:</strong> J.D. &lt;jd.shadow@net.local&gt;</p>
-            <p><strong>Para:</strong> Alvo</p>
-            <p>E aí Alex, tudo certo para amanhã? Não esquece de pegar a encomenda. Aliás, encontrei com o velho <strong>Mercer</strong> ontem, ele disse que a família mandou lembranças.</p>
-            <p>- J</p>
-        </div>
-
-        <div class="item" id="photo-back" style="z-index: 4;">
-            <div class="item-title">Verso de Foto Oculta</div>
-            <p>"Eu e os primos na virada do ano."</p>
-            <p style="font-size: 0.8em; color: #777;">*Anotação a lápis quase apagada:* M. Mercer</p>
-        </div>
-
+        <!-- Itens são gerados por JS -->
     </div>
 
     <div id="terminal">
         <div id="result-msg"></div>
-        <label for="answer">ALVO:</label>
-        <input type="text" id="answer" placeholder="Insira o nome completo aqui..." autocomplete="off">
+        <label for="answer">INPUT:</label>
+        <input type="text" id="answer" placeholder="Insira a resposta..." autocomplete="off">
         <button onclick="checkAnswer()">VERIFICAR</button>
     </div>
 
     <script>
-        // Make items draggable
-        const items = document.querySelectorAll('.item');
+        const phases = [
+            {
+                level: 1,
+                title: "FASE 1: INICIANTE - RECONHECIMENTO",
+                mission: "MISSÃO: Descubra o <strong>Nome Completo</strong> do alvo.",
+                answer: "alex mercer",
+                items: `
+                    <div class="item" style="top: 10%; left: 10%; width: 200px; transform: rotate(-5deg);">
+                        <div class="item-title">Crachá Danificado</div>
+                        <p>NOME: <span style="color:white;">Alex M.</span></p>
+                        <p>ID: 8849-B</p>
+                    </div>
+                    <div class="item pink-item" style="top: 50%; left: 20%; width: 150px; background: #222; transform: rotate(10deg);">
+                        <div class="item-title">Post-it</div>
+                        <p>Lembrar: A senha do cofre é o nome da família da minha mãe + 2077.</p>
+                    </div>
+                    <div class="item" style="top: 20%; left: 50%; width: 300px; transform: rotate(2deg);">
+                        <div class="item-title">Impressão Pessoal</div>
+                        <p><strong>De:</strong> J.D.</p>
+                        <p>E aí Alex, tudo certo para amanhã? Encontrei com o velho <strong>Mercer</strong> ontem, ele mandou lembranças.</p>
+                    </div>
+                `
+            },
+            {
+                level: 2,
+                title: "FASE 2: INTERMEDIÁRIO - O COFRE",
+                mission: "MISSÃO: Descubra a <strong>Chave de Acesso</strong> do servidor (Formato: 5 caracteres contínuos).",
+                answer: "o42nx",
+                items: `
+                    <div class="item pink-item" style="top: 15%; left: 30%; width: 220px; transform: rotate(-3deg);">
+                        <div class="item-title">Anotação Rápida</div>
+                        <p>Regra da Chave:<br>
+                        1. Primeira letra do nosso setor.<br>
+                        2. Número do nosso prédio.<br>
+                        3. Sigla de 2 letras do projeto.
+                        </p>
+                    </div>
+                    <div class="item" style="top: 55%; left: 15%; width: 250px; transform: rotate(8deg);">
+                        <div class="item-title">Carta de Boas-Vindas</div>
+                        <p>Bem-vindo ao Setor <strong>Operacional</strong>.<br>Você foi alocado no Prédio <strong>42</strong>. Não se atrase.</p>
+                    </div>
+                    <div class="item" style="top: 30%; left: 60%; width: 200px; transform: rotate(-10deg);">
+                        <div class="item-title">Log do Sistema</div>
+                        <p>13:00 - Inicializando subsistemas.<br>13:05 - Projeto <strong>Nexus (NX)</strong> ativado com sucesso.</p>
+                    </div>
+                `
+            },
+            {
+                level: 3,
+                title: "FASE 3: DIFÍCIL - DESCRIPTOGRAFIA",
+                mission: "MISSÃO: Encontre o <strong>Código de Desativação</strong> da bomba lógica.",
+                answer: "omega",
+                items: `
+                    <div class="item" style="top: 20%; left: 20%; width: 300px; transform: rotate(0deg);">
+                        <div class="item-title">Manual de Segurança</div>
+                        <p>Em caso de contenção de falhas, procure pela palavra-passe codificada em <strong>Base64</strong> na etiqueta de manutenção do núcleo.</p>
+                    </div>
+                    <div class="item pink-item" style="top: 60%; left: 50%; width: 200px; transform: rotate(15deg);">
+                        <div class="item-title">Etiqueta de Manutenção</div>
+                        <p>CORE_STATUS: ONLINE</p>
+                        <p>TAG_AUTH: <span style="font-family: monospace; color: white;">VDBMRVJFRT0=</span> ... espera, essa tá corrompida.</p>
+                        <p>TAG_BACKUP: <span style="font-family: monospace; color: white;">T01FR0E=</span></p>
+                    </div>
+                    <div class="item" style="top: 15%; left: 65%; width: 150px; transform: rotate(-5deg); background:#000;">
+                        <div class="item-title" style="border-color:#333; color:#555;">Recibo Rasgado</div>
+                        <p class="hidden-text">Dica offline: T01FR0E decodificado revela a última letra grega.</p>
+                    </div>
+                `
+            },
+            {
+                level: 4,
+                title: "SISTEMA COMPROMETIDO",
+                mission: "VOCÊ VENCEU. Todas as travas de segurança foram removidas.",
+                answer: "",
+                items: `
+                    <div class="item" style="top: 30%; left: 35%; width: 300px; transform: rotate(0deg); text-align: center; border-color: #0f0; box-shadow: 0 0 30px #0f0;">
+                        <div class="item-title" style="color: #0f0; border-color: #0f0;">Acesso Root Garantido</div>
+                        <p style="color: #0f0;">Parabéns, agente.</p>
+                        <p style="color: #0f0;">O sistema agora é seu.</p>
+                    </div>
+                `
+            }
+        ];
+
+        let currentPhaseIndex = 0;
         let highestZ = 10;
 
-        items.forEach(item => {
-            let isDragging = false;
-            let startX, startY, initialX, initialY;
+        function loadPhase(index) {
+            const desk = document.getElementById('desk');
+            const phaseTitle = document.getElementById('phase-title');
+            const missionText = document.getElementById('mission-text');
+            const input = document.getElementById('answer');
+            const btn = document.querySelector('button');
 
-            item.addEventListener('mousedown', dragStart);
+            if (index >= phases.length) return;
+            const phase = phases[index];
+
+            phaseTitle.textContent = phase.title;
+            missionText.innerHTML = phase.mission;
+            desk.innerHTML = phase.items;
+            input.value = '';
+
+            if (index === phases.length - 1) {
+                // Fim de jogo
+                input.disabled = true;
+                btn.disabled = true;
+                document.getElementById('terminal').style.opacity = '0.5';
+            }
+
+            makeItemsDraggable();
+        }
+
+        function makeItemsDraggable() {
+            const items = document.querySelectorAll('.item');
             
-            function dragStart(e) {
-                isDragging = true;
-                item.style.zIndex = ++highestZ;
-                item.classList.add('dragging');
-                
-                startX = e.clientX;
-                startY = e.clientY;
-                
-                const style = window.getComputedStyle(item);
-                initialX = parseInt(style.left, 10);
-                initialY = parseInt(style.top, 10);
+            items.forEach(item => {
+                let isDragging = false;
+                let startX, startY, initialX, initialY;
 
-                document.addEventListener('mousemove', drag);
-                document.addEventListener('mouseup', dragEnd);
-            }
+                // Ensure random Z-index so they overlay nicely initially
+                highestZ++;
+                item.style.zIndex = highestZ;
 
-            function drag(e) {
-                if (!isDragging) return;
+                item.addEventListener('mousedown', dragStart);
                 
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                
-                item.style.left = initialX + dx + 'px';
-                item.style.top = initialY + dy + 'px';
-            }
+                function dragStart(e) {
+                    isDragging = true;
+                    highestZ++;
+                    item.style.zIndex = highestZ;
+                    item.classList.add('dragging');
+                    
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    
+                    const style = window.getComputedStyle(item);
+                    initialX = parseInt(style.left, 10) || 0;
+                    initialY = parseInt(style.top, 10) || 0;
 
-            function dragEnd() {
-                isDragging = false;
-                item.classList.remove('dragging');
-                document.removeEventListener('mousemove', drag);
-                document.removeEventListener('mouseup', dragEnd);
-            }
-        });
+                    document.addEventListener('mousemove', drag);
+                    document.addEventListener('mouseup', dragEnd);
+                }
 
-        // Verification logic
+                function drag(e) {
+                    if (!isDragging) return;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    item.style.left = initialX + dx + 'px';
+                    item.style.top = initialY + dy + 'px';
+                }
+
+                function dragEnd() {
+                    isDragging = false;
+                    item.classList.remove('dragging');
+                    document.removeEventListener('mousemove', drag);
+                    document.removeEventListener('mouseup', dragEnd);
+                }
+            });
+        }
+
         function checkAnswer() {
             const input = document.getElementById('answer').value.trim().toLowerCase();
             const msg = document.getElementById('result-msg');
+            const expectedAnswer = phases[currentPhaseIndex].answer;
             
-            // Expected answer: Alex Mercer
-            if (input === 'alex mercer') {
-                msg.textContent = "ACESSO CONCEDIDO: Identidade confirmada.";
+            if (input === expectedAnswer) {
+                msg.textContent = "ACESSO CONCEDIDO: AVANÇANDO NÍVEL...";
                 msg.className = "success";
                 msg.style.display = "block";
-                setTimeout(() => msg.style.display = 'none', 4000);
+                
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                    currentPhaseIndex++;
+                    loadPhase(currentPhaseIndex);
+                }, 2500);
+
             } else {
-                msg.textContent = "ACESSO NEGADO: Dados incorretos.";
+                msg.textContent = "ACESSO NEGADO: DADOS INCORRETOS.";
                 msg.className = "error";
                 msg.style.display = "block";
                 setTimeout(() => msg.style.display = 'none', 3000);
             }
         }
         
-        // Enter key support
         document.getElementById('answer').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                checkAnswer();
-            }
+            if (e.key === 'Enter') checkAnswer();
         });
+
+        // Init
+        loadPhase(currentPhaseIndex);
     </script>
 </body>
 </html>
